@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gold Coin Collector visualisation</title>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.21.0/cytoscape.min.js"
+      integrity="sha512-6NNH8uUbdENB10r5FH/4DZviHTQ44GtZ+c+fwSiWM4GekjajHkYanpH0+jWt3meFll/HHWAcxKLcMpSAXuT/Dg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+
+    <style>
+      #cy {
+        width: 100%;
+        height: 100%;
+      }
+
+      html,
+      body {
+        height: 100%;
+      }
+    </style>
+    <script defer>
+      let cy;
+      let graphStyle = () => document.querySelector("#graphStyleSelect");
+      let inputData = () => document.querySelector("#inputData");
+
+      function setLayout() {
+        cy.layout({ name: graphStyle().selectedOptions[0].value }).run();
+      }
+
+      function setupCyto() {
+        cy = cytoscape({
+          container: document.querySelector("#cy"),
+          wheelSensitivity: 0.2,
+          style: [
+            {
+              selector: "edges[arrow]",
+              style: {
+                "target-arrow-shape": "triangle",
+              },
+            },
+            {
+              selector: "edges",
+              style: {
+                width: 2,
+                "curve-style": "straight",
+              },
+            },
+            {
+              selector: ".start",
+              style: {
+                "background-color": "blue",
+                label: "start",
+              },
+            },
+            {
+              selector: ".end",
+              style: {
+                "background-color": "green",
+                label: "end",
+              },
+            },
+            {
+              selector: ".coin",
+              style: {
+                "background-color": "gold",
+                label: "data(content)",
+              },
+            },
+            {
+              selector: ".node",
+              style: {
+                "background-color": "#AAA",
+                label: "data(content)",
+              },
+            },
+            {
+              selector: ":selected",
+              css: {
+                "background-color": "purple",
+                "line-color": "purple",
+              },
+            },
+          ],
+        });
+      }
+
+      function drawGraph() {
+        if (inputData().value) {
+          setupCyto();
+
+          let lines = inputData().value.replace(/\s+$/g, "").split("\n");
+
+          let coins = lines[lines.length - 1].split(" ");
+
+          let edges = [];
+          let nodes = new Set();
+
+          for (let i = 1; i < lines.length - 1; i++) {
+            let [a, b] = lines[i].split(" ");
+            nodes.add(a);
+            nodes.add(b);
+            let edge = {
+              group: "edges",
+              data: {
+                id: `e${i}`,
+                source: a,
+                target: b,
+              },
+            };
+
+            edges.push(edge);
+          }
+          nodes.forEach((x) => {
+            let classname = coins.indexOf(x) > -1 ? "coin" : "node";
+            let label = x;
+            if (x == nodes.size) {
+              classname = "end";
+            } else if (x == 1) {
+              classname = "start";
+            }
+
+            cy.add({
+              group: "nodes",
+              classes: classname,
+              data: {
+                id: x,
+                content: x,
+              },
+            });
+          });
+
+          cy.add(edges);
+          setLayout(
+            document.querySelector("#graphStyleSelect").selectedOptions[0].value
+          );
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div style="display: flex">
+      <textarea id="inputData" cols="30" rows="10"></textarea>
+      <div>
+        <button onclick="drawGraph()">Create graph</button>
+        <select onchange="setLayout()" id="graphStyleSelect">
+          <option value="grid">grid</option>
+          <option value="breadthfirst">breadthfirst</option>
+        </select>
+      </div>
+    </div>
+    <div id="cy"></div>
+  </body>
+</html>
